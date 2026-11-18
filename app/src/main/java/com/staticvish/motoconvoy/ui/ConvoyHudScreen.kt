@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,12 +34,19 @@ import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConvoyHudScreen(
     simulator: ConvoySimulator = remember { ConvoySimulator() }
 ) {
     val snapshot by simulator.snapshot.collectAsState()
     var isSimulating by remember { mutableStateOf(true) }
+    var showJoinDialog by remember { mutableStateOf(false) }
+
+    // User profile state
+    var myName by remember { mutableStateOf("Vish") }
+    var myBike by remember { mutableStateOf("Tiger 900 Rally Pro") }
+    var sessionCode by remember { mutableStateOf("MOTO-KL89") }
 
     // Simulation loop
     LaunchedEffect(isSimulating) {
@@ -63,14 +71,14 @@ fun ConvoyHudScreen(
         ) {
             Column {
                 Text(
-                    text = "MOTO CONVOY RADAR",
+                    text = "MOTO CONVOY RADAR v1.0",
                     color = Color(0xFF38BDF8),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "Tactical Formation • Karak Loop",
+                    text = "Session: $sessionCode • Karak Loop",
                     color = Color(0xFF94A3B8),
                     fontSize = 12.sp
                 )
@@ -78,7 +86,8 @@ fun ConvoyHudScreen(
 
             Surface(
                 color = if (isSimulating) Color(0xFF065F46) else Color(0xFF374151),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.clickable { showJoinDialog = true }
             ) {
                 Text(
                     text = if (isSimulating) "● LIVE RADAR" else "■ PAUSED",
@@ -145,6 +154,15 @@ fun ConvoyHudScreen(
             ) {
                 Text("Test SOS", fontSize = 12.sp, color = Color.White)
             }
+
+            Button(
+                onClick = { showJoinDialog = true },
+                modifier = Modifier.weight(0.9f).height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Role", fontSize = 12.sp, color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -168,6 +186,61 @@ fun ConvoyHudScreen(
                 RiderRosterItem(rider = rider, leadRider = snapshot.leadRider)
             }
         }
+    }
+
+    // Role / Session Configuration Dialog
+    if (showJoinDialog) {
+        AlertDialog(
+            onDismissRequest = { showJoinDialog = false },
+            title = {
+                Text("Convoy Role & Session", color = Color(0xFF38BDF8), fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = myName,
+                        onValueChange = { myName = it },
+                        label = { Text("Rider Name") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = myBike,
+                        onValueChange = { myBike = it },
+                        label = { Text("Bike Model") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = sessionCode,
+                        onValueChange = { sessionCode = it.uppercase() },
+                        label = { Text("Ride Session Code") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showJoinDialog = false }) {
+                    Text("Save & Join")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showJoinDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = Color(0xFF1E293B)
+        )
     }
 }
 

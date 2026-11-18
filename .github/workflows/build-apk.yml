@@ -39,11 +39,11 @@ jobs:
       - name: Rename APK Artifact
         run: |
           mkdir -p artifacts
-          cp app/build/outputs/apk/debug/app-debug.apk artifacts/moto-convoy-mock.apk
+          cp app/build/outputs/apk/debug/app-debug.apk artifacts/moto-convoy-v1.0.0.apk
 
       - name: Upload Mock APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: moto-convoy-mock-apk
-          path: artifacts/moto-convoy-mock.apk
-          retention-days: 14
+          name: moto-convoy-v1.0.0-apk
+          path: artifacts/moto-convoy-v1.0.0.apk
+          retention-days: 30
