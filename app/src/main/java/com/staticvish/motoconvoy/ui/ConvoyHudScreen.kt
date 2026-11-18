@@ -30,6 +30,8 @@ import com.staticvish.motoconvoy.domain.telemetry.SpatialCalculator
 import com.staticvish.motoconvoy.simulation.ConvoySimulator
 import com.staticvish.motoconvoy.simulation.ConvoySnapshot
 import kotlinx.coroutines.delay
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun ConvoyHudScreen(
