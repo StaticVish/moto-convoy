@@ -34,6 +34,11 @@ import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
 
+enum class DisplayMode {
+    MAP,
+    RADAR
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConvoyHudScreen(
@@ -41,6 +46,7 @@ fun ConvoyHudScreen(
 ) {
     val snapshot by simulator.snapshot.collectAsState()
     var isSimulating by remember { mutableStateOf(true) }
+    var displayMode by remember { mutableStateOf(DisplayMode.MAP) }
     var showJoinDialog by remember { mutableStateOf(false) }
 
     // User profile state
@@ -84,40 +90,76 @@ fun ConvoyHudScreen(
                 )
             }
 
-            Surface(
-                color = if (isSimulating) Color(0xFF065F46) else Color(0xFF374151),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.clickable { showJoinDialog = true }
-            ) {
-                Text(
-                    text = if (isSimulating) "● LIVE RADAR" else "■ PAUSED",
-                    color = if (isSimulating) Color(0xFF34D399) else Color(0xFF9CA3AF),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // View Mode Switcher: MAP vs RADAR
+                Surface(
+                    color = if (displayMode == DisplayMode.MAP) Color(0xFF0284C7) else Color(0xFF1E293B),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.clickable { displayMode = DisplayMode.MAP }
+                ) {
+                    Text(
+                        text = "MAP",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    )
+                }
+
+                Surface(
+                    color = if (displayMode == DisplayMode.RADAR) Color(0xFF0284C7) else Color(0xFF1E293B),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.clickable { displayMode = DisplayMode.RADAR }
+                ) {
+                    Text(
+                        text = "RADAR",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    )
+                }
+
+                Surface(
+                    color = if (isSimulating) Color(0xFF065F46) else Color(0xFF374151),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.clickable { showJoinDialog = true }
+                ) {
+                    Text(
+                        text = if (isSimulating) "● LIVE" else "■ PAUSE",
+                        color = if (isSimulating) Color(0xFF34D399) else Color(0xFF9CA3AF),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Top Tactical HUD Bar
         TacticalHudBar(snapshot = snapshot)
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Convoy Mini-Radar Canvas
-        TacticalRadarCanvas(
-            snapshot = snapshot,
+        // Main Visual Area: OSM Map vs Tactical Radar Canvas
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(230.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0xFF111827))
                 .border(1.dp, Color(0xFF1F2937), RoundedCornerShape(16.dp))
-        )
+        ) {
+            if (displayMode == DisplayMode.MAP) {
+                TacticalOsmMapView(snapshot = snapshot)
+            } else {
+                TacticalRadarCanvas(snapshot = snapshot)
+            }
+        }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Glove-Friendly Tactical Action Buttons
         Row(
@@ -126,7 +168,7 @@ fun ConvoyHudScreen(
         ) {
             Button(
                 onClick = { isSimulating = !isSimulating },
-                modifier = Modifier.weight(1f).height(48.dp),
+                modifier = Modifier.weight(1f).height(46.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B)),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -135,7 +177,7 @@ fun ConvoyHudScreen(
 
             Button(
                 onClick = { simulator.toggleStretchedPack() },
-                modifier = Modifier.weight(1.3f).height(48.dp),
+                modifier = Modifier.weight(1.3f).height(46.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (snapshot.spreadStatus == ConvoySpreadStatus.STRETCHED) Color(0xFFB45309) else Color(0xFF1E293B)
                 ),
@@ -146,7 +188,7 @@ fun ConvoyHudScreen(
 
             Button(
                 onClick = { simulator.toggleEmergencySos() },
-                modifier = Modifier.weight(1f).height(48.dp),
+                modifier = Modifier.weight(1f).height(46.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (snapshot.isEmergencyActive) Color(0xFFDC2626) else Color(0xFF1E293B)
                 ),
@@ -157,7 +199,7 @@ fun ConvoyHudScreen(
 
             Button(
                 onClick = { showJoinDialog = true },
-                modifier = Modifier.weight(0.9f).height(48.dp),
+                modifier = Modifier.weight(0.9f).height(46.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -165,7 +207,7 @@ fun ConvoyHudScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "ACTIVE CONVOY ROSTER (${snapshot.riders.size})",
@@ -352,7 +394,7 @@ fun TacticalRadarCanvas(
     snapshot: ConvoySnapshot,
     modifier: Modifier = Modifier
 ) {
-    Canvas(modifier = modifier) {
+    Canvas(modifier = modifier.fillMaxSize()) {
         val centerX = size.width / 2f
         val centerY = size.height / 2f
 
